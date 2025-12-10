@@ -540,26 +540,26 @@ def get_score_emoji(total: int) -> str:
         return "📌"
 
 
-def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -> Dict:
+def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash News") -> Dict:
     """
-    构建飞书卡片消息（原始 vs GPT 对比）
+    Build Feishu card message (Original vs GPT comparison)
     
     Args:
-        news_list: 新闻列表
-        title: 卡片标题
+        news_list: News list
+        title: Card title
     
     Returns:
-        飞书卡片消息体
+        Feishu card message body
     """
     elements = []
     
-    # 头部时间
+    # Header time
     current_time = datetime.now(UTC_PLUS_8).strftime("%Y-%m-%d %H:%M")
     elements.append({
         "tag": "div",
         "text": {
             "tag": "lark_md",
-            "content": f"⏰ 生成时间：{current_time} (UTC+8)"
+            "content": f"⏰ Generated: {current_time} (UTC+8)"
         }
     })
     elements.append({"tag": "hr"})
@@ -583,12 +583,12 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
         gpt_title = news.get("gpt_title", "")
         gpt_body = news.get("gpt_body", "")
         
-        # ========== 新闻标题栏 ==========
+        # ========== News header ==========
         elements.append({
             "tag": "div",
             "text": {
                 "tag": "lark_md",
-                "content": f"**{emoji} 快讯 {idx}** ｜ 评分: **{total_score}/100** ｜ 来源: {source}"
+                "content": f"**{emoji} Flash {idx}** | Score: **{total_score}/100** | Source: {source}"
             }
         })
         
@@ -602,15 +602,15 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
                 }
             })
         
-        # ========== 原始版本（折叠面板）==========
-        original_content = f"**标题**：{original_title}\n\n**内容**：{original_body}"
+        # ========== Original version (collapsible) ==========
+        original_content = f"**Title**: {original_title}\n\n**Content**: {original_body}"
         elements.append({
             "tag": "collapsible_panel",
             "expanded": False,
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": "📄 原始版本（点击展开）"
+                    "content": "📄 Original Version (Click to expand)"
                 }
             },
             "border": {
@@ -629,27 +629,27 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
             ]
         })
         
-        # ========== GPT 优化版本 ==========
+        # ========== GPT Polished Version ==========
         if is_polished and gpt_title and gpt_body:
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": "✨ **GPT 优化版本**"
+                    "content": "✨ **GPT Polished Version**"
                 }
             })
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**标题**：{gpt_title}"
+                    "content": f"**Title**: {gpt_title}"
                 }
             })
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**内容**：{gpt_body}"
+                    "content": f"**Content**: {gpt_body}"
                 }
             })
         else:
@@ -657,27 +657,27 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": "📝 **原始版本**（未达优化阈值）"
+                    "content": "📝 **Original Version** (Below polish threshold)"
                 }
             })
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**标题**：{original_title}"
+                    "content": f"**Title**: {original_title}"
                 }
             })
-            # 截断过长的内容
+            # Truncate long content
             display_body = original_body[:300] + "..." if len(original_body) > 300 else original_body
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**内容**：{display_body}"
+                    "content": f"**Content**: {display_body}"
                 }
             })
         
-        # 原文链接按钮
+        # Source link button
         if link:
             elements.append({
                 "tag": "action",
@@ -686,7 +686,7 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
                         "tag": "button",
                         "text": {
                             "tag": "plain_text",
-                            "content": "🔗 查看原文"
+                            "content": "🔗 View Source"
                         },
                         "type": "default",
                         "url": link
@@ -694,18 +694,18 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
                 ]
             })
         
-        # 分隔线
+        # Divider
         if idx < len(news_list):
             elements.append({"tag": "hr"})
     
-    # 底部说明
+    # Footer note
     polished_count = sum(1 for n in news_list if n.get('polished'))
     elements.append({
         "tag": "note",
         "elements": [
             {
                 "tag": "plain_text",
-                "content": f"💡 共 {len(news_list)} 条 | {polished_count} 条已 GPT 优化 | 仅供参考"
+                "content": f"💡 Total: {len(news_list)} | GPT Polished: {polished_count} | For reference only"
             }
         ]
     })
@@ -738,35 +738,46 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 加密快讯") -
     return card
 
 
-def send_to_feishu(news_list: List[Dict], title: str = "📰 加密快讯") -> bool:
+def send_to_feishu(news_list: List[Dict], title: str = "📰 Crypto Flash News", max_retries: int = 3) -> bool:
     """
-    发送新闻到飞书群
+    Send news to Feishu with retry mechanism
     
     Args:
-        news_list: 新闻列表
-        title: 卡片标题
+        news_list: News list
+        title: Card title
+        max_retries: Maximum retry attempts (default: 3)
     
     Returns:
-        是否发送成功
+        Whether send was successful
     """
     if not news_list:
-        print("⚠️ 没有新闻可发送")
+        print("⚠️ No news to send")
         return False
     
-    try:
-        bot = FeishuBot()
-        card = build_feishu_card(news_list, title)
-        result = bot.send(card)
-        
-        if result.get("code") == 0 or result.get("StatusCode") == 0:
-            print("✅ 飞书发送成功!")
-            return True
-        else:
-            print(f"❌ 飞书发送失败: {result}")
-            return False
-    except Exception as e:
-        print(f"❌ 飞书发送出错: {str(e)}")
-        return False
+    bot = FeishuBot()
+    card = build_feishu_card(news_list, title)
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"   Attempt {attempt}/{max_retries}...")
+            result = bot.send(card)
+            
+            if result.get("code") == 0 or result.get("StatusCode") == 0:
+                print("✅ Feishu send successful!")
+                return True
+            else:
+                print(f"   ❌ Attempt {attempt} failed: {result}")
+                if attempt < max_retries:
+                    import time
+                    time.sleep(2)  # Wait 2 seconds before retry
+        except Exception as e:
+            print(f"   ❌ Attempt {attempt} error: {str(e)}")
+            if attempt < max_retries:
+                import time
+                time.sleep(2)
+    
+    print(f"❌ Feishu send failed after {max_retries} attempts")
+    return False
 
 
 def main():
@@ -829,7 +840,7 @@ Examples:
     # Feishu options
     parser.add_argument("--no-feishu", action="store_true",
                        help="Skip sending to Feishu")
-    parser.add_argument("--feishu-title", default="📰 加密快讯",
+    parser.add_argument("--feishu-title", default="📰 Crypto Flash News",
                        help="Feishu card title")
     
     args = parser.parse_args()

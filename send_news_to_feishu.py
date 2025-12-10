@@ -28,26 +28,26 @@ def get_score_emoji(total: int) -> str:
         return "📌"
 
 
-def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比") -> dict:
+def build_comparison_card(news_list: list, title: str = "📰 Crypto Flash News") -> dict:
     """
-    构建原始 vs GPT 优化版本的对比卡片
+    Build Original vs GPT comparison card
     
     Args:
-        news_list: 新闻列表
-        title: 卡片标题
+        news_list: News list
+        title: Card title
     
     Returns:
-        飞书卡片消息体
+        Feishu card message body
     """
     elements = []
     
-    # 头部时间
+    # Header time
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
     elements.append({
         "tag": "div",
         "text": {
             "tag": "lark_md",
-            "content": f"⏰ 生成时间：{current_time}"
+            "content": f"⏰ Generated: {current_time}"
         }
     })
     elements.append({"tag": "hr"})
@@ -71,12 +71,12 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
         gpt_title = news.get("gpt_title", "")
         gpt_body = news.get("gpt_body", "")
         
-        # ========== 新闻标题栏 ==========
+        # ========== News header ==========
         elements.append({
             "tag": "div",
             "text": {
                 "tag": "lark_md",
-                "content": f"**{emoji} 快讯 {idx}** ｜ 评分: **{total_score}/100** ｜ 来源: {source}"
+                "content": f"**{emoji} Flash {idx}** | Score: **{total_score}/100** | Source: {source}"
             }
         })
         
@@ -90,15 +90,15 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
                 }
             })
         
-        # ========== 原始版本（折叠面板）==========
-        original_content = f"**标题**：{original_title}\n\n**内容**：{original_body}"
+        # ========== Original version (collapsible) ==========
+        original_content = f"**Title**: {original_title}\n\n**Content**: {original_body}"
         elements.append({
             "tag": "collapsible_panel",
             "expanded": False,
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": "📄 原始版本（点击展开）"
+                    "content": "📄 Original Version (Click to expand)"
                 }
             },
             "border": {
@@ -117,27 +117,27 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
             ]
         })
         
-        # ========== GPT 优化版本 ==========
+        # ========== GPT Polished Version ==========
         if is_polished and gpt_title and gpt_body:
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": "✨ **GPT 优化版本**"
+                    "content": "✨ **GPT Polished Version**"
                 }
             })
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**标题**：{gpt_title}"
+                    "content": f"**Title**: {gpt_title}"
                 }
             })
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": f"**内容**：{gpt_body}"
+                    "content": f"**Content**: {gpt_body}"
                 }
             })
         else:
@@ -145,11 +145,11 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": "⚠️ 未优化（分数未达阈值或优化失败）"
+                    "content": "⚠️ Not polished (Below threshold or polish failed)"
                 }
             })
         
-        # 原文链接按钮
+        # Source link button
         if link:
             elements.append({
                 "tag": "action",
@@ -158,7 +158,7 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
                         "tag": "button",
                         "text": {
                             "tag": "plain_text",
-                            "content": "🔗 查看原文"
+                            "content": "🔗 View Source"
                         },
                         "type": "default",
                         "url": link
@@ -166,17 +166,17 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
                 ]
             })
         
-        # 分隔线
+        # Divider
         if idx < len(news_list):
             elements.append({"tag": "hr"})
     
-    # 底部说明
+    # Footer note
     elements.append({
         "tag": "note",
         "elements": [
             {
                 "tag": "plain_text",
-                "content": "💡 原始版本由 Grok 生成 | GPT 优化版本由 GPT-4.1 润色 | 仅供参考"
+                "content": "💡 Original by Grok | Polished by GPT | For reference only"
             }
         ]
     })
@@ -210,26 +210,27 @@ def build_comparison_card(news_list: list, title: str = "📰 加密快讯对比
 
 
 def main():
-    parser = argparse.ArgumentParser(description="发送新闻到飞书群（原始 vs GPT 对比）")
-    parser.add_argument("--file", "-f", required=True, help="新闻 JSON 文件路径")
-    parser.add_argument("--threshold", "-t", type=int, default=70, help="分数阈值（默认: 70）")
-    parser.add_argument("--title", default="📰 加密快讯对比（原始 vs GPT）", help="卡片标题")
-    parser.add_argument("--dry-run", action="store_true", help="仅预览，不实际发送")
+    parser = argparse.ArgumentParser(description="Send news to Feishu (Original vs GPT comparison)")
+    parser.add_argument("--file", "-f", required=True, help="News JSON file path")
+    parser.add_argument("--threshold", "-t", type=int, default=70, help="Score threshold (default: 70)")
+    parser.add_argument("--title", default="📰 Crypto Flash News", help="Card title")
+    parser.add_argument("--retries", "-r", type=int, default=3, help="Max retry attempts (default: 3)")
+    parser.add_argument("--dry-run", action="store_true", help="Preview only, don't send")
     
     args = parser.parse_args()
     
-    # 加载新闻
-    print(f"📂 加载文件: {args.file}")
+    # Load news
+    print(f"📂 Loading file: {args.file}")
     data = load_news(args.file)
     news_list = data.get("news", [])
     
     if not news_list:
-        print("❌ 没有找到新闻数据")
+        print("❌ No news data found")
         sys.exit(1)
     
-    print(f"📊 总共 {len(news_list)} 条新闻")
+    print(f"📊 Total: {len(news_list)} news items")
     
-    # 筛选分数 > threshold 的新闻
+    # Filter by score threshold
     filtered_news = []
     for news in news_list:
         score = news.get("score", {})
@@ -237,33 +238,45 @@ def main():
         if total >= args.threshold:
             filtered_news.append(news)
     
-    print(f"✅ 筛选出 {len(filtered_news)} 条分数 >= {args.threshold} 的新闻")
+    print(f"✅ Filtered: {len(filtered_news)} news with score >= {args.threshold}")
     
     if not filtered_news:
-        print("⚠️ 没有符合条件的新闻")
+        print("⚠️ No news meets the threshold")
         sys.exit(0)
     
-    # 构建卡片
+    # Build card
     card = build_comparison_card(filtered_news, args.title)
     
     if args.dry_run:
-        print("\n📋 预览模式（不发送）:")
+        print("\n📋 Preview mode (not sending):")
         print(json.dumps(card, indent=2, ensure_ascii=False))
         return
     
-    # 发送到飞书
-    print("\n📤 发送到飞书...")
-    try:
-        bot = FeishuBot()
-        result = bot.send(card)
-        
-        if result.get("code") == 0 or result.get("StatusCode") == 0:
-            print("✅ 发送成功!")
-        else:
-            print(f"❌ 发送失败: {result}")
-    except Exception as e:
-        print(f"❌ 发送出错: {str(e)}")
-        sys.exit(1)
+    # Send to Feishu with retry
+    print(f"\n📤 Sending to Feishu (max {args.retries} attempts)...")
+    bot = FeishuBot()
+    
+    for attempt in range(1, args.retries + 1):
+        try:
+            print(f"   Attempt {attempt}/{args.retries}...")
+            result = bot.send(card)
+            
+            if result.get("code") == 0 or result.get("StatusCode") == 0:
+                print("✅ Send successful!")
+                return
+            else:
+                print(f"   ❌ Attempt {attempt} failed: {result}")
+                if attempt < args.retries:
+                    import time
+                    time.sleep(2)
+        except Exception as e:
+            print(f"   ❌ Attempt {attempt} error: {str(e)}")
+            if attempt < args.retries:
+                import time
+                time.sleep(2)
+    
+    print(f"❌ Send failed after {args.retries} attempts")
+    sys.exit(1)
 
 
 if __name__ == "__main__":
