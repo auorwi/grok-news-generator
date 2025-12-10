@@ -540,18 +540,22 @@ def get_score_emoji(total: int) -> str:
         return "📌"
 
 
-def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash News") -> Dict:
+def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash News", polish_threshold: int = 75) -> Dict:
     """
     Build Feishu card message (Original vs GPT comparison)
     
     Args:
         news_list: News list
         title: Card title
+        polish_threshold: Score threshold for GPT polishing
     
     Returns:
         Feishu card message body
     """
     elements = []
+    
+    # Sort news by score (highest first)
+    sorted_news = sorted(news_list, key=lambda x: x.get("score", {}).get("total", 0) if isinstance(x.get("score"), dict) else 0, reverse=True)
     
     # Header time
     current_time = datetime.now(UTC_PLUS_8).strftime("%Y-%m-%d %H:%M")
@@ -564,8 +568,8 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
     })
     elements.append({"tag": "hr"})
     
-    # 遍历新闻
-    for idx, news in enumerate(news_list, 1):
+    # Iterate news
+    for idx, news in enumerate(sorted_news, 1):
         score = news.get("score", {})
         total_score = score.get("total", 0) if isinstance(score, dict) else 0
         is_polished = news.get("polished", False)
@@ -575,11 +579,11 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
         link = news.get("link", "")
         publish_time = news.get("publish_time", "")
         
-        # 原始内容
+        # Original content
         original_title = news.get("title", "")
         original_body = news.get("body", "")
         
-        # GPT 优化内容
+        # GPT polished content
         gpt_title = news.get("gpt_title", "")
         gpt_body = news.get("gpt_body", "")
         
@@ -592,7 +596,7 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
             }
         })
         
-        # 发布时间
+        # Publish time
         if publish_time:
             elements.append({
                 "tag": "div",
@@ -602,35 +606,36 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
                 }
             })
         
-        # ========== Original version (collapsible) ==========
-        original_content = f"**Title**: {original_title}\n\n**Content**: {original_body}"
-        elements.append({
-            "tag": "collapsible_panel",
-            "expanded": False,
-            "header": {
-                "title": {
-                    "tag": "plain_text",
-                    "content": "📄 Original Version (Click to expand)"
-                }
-            },
-            "border": {
-                "color": "grey"
-            },
-            "vertical_spacing": "8px",
-            "padding": "8px 8px 8px 8px",
-            "elements": [
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": original_content
-                    }
-                }
-            ]
-        })
-        
-        # ========== GPT Polished Version ==========
+        # ========== Check if polished ==========
         if is_polished and gpt_title and gpt_body:
+            # Has GPT polished version - show original in collapsible panel
+            original_content = f"**Title**: {original_title}\n\n**Content**: {original_body}"
+            elements.append({
+                "tag": "collapsible_panel",
+                "expanded": False,
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": "📄 Original Version (Click to expand)"
+                    }
+                },
+                "border": {
+                    "color": "grey"
+                },
+                "vertical_spacing": "8px",
+                "padding": "8px 8px 8px 8px",
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": original_content
+                        }
+                    }
+                ]
+            })
+            
+            # GPT Polished Version
             elements.append({
                 "tag": "div",
                 "text": {
@@ -653,11 +658,12 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
                 }
             })
         else:
+            # No GPT version - show original directly (no collapsible)
             elements.append({
                 "tag": "div",
                 "text": {
                     "tag": "lark_md",
-                    "content": "📝 **Original Version** (Below polish threshold)"
+                    "content": f"⚠️ *Score below {polish_threshold}, generated by Grok directly*"
                 }
             })
             elements.append({
@@ -668,7 +674,7 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
                 }
             })
             # Truncate long content
-            display_body = original_body[:300] + "..." if len(original_body) > 300 else original_body
+            display_body = original_body[:500] + "..." if len(original_body) > 500 else original_body
             elements.append({
                 "tag": "div",
                 "text": {
@@ -738,7 +744,7 @@ def build_feishu_card(news_list: List[Dict], title: str = "📰 Crypto Flash New
     return card
 
 
-def send_to_feishu(news_list: List[Dict], title: str = "📰 Crypto Flash News", max_retries: int = 3) -> bool:
+def send_to_feishu(news_list: List[Dict], title: str = "📰 Crypto Flash News", max_retries: int = 3, polish_threshold: int = 75) -> bool:
     """
     Send news to Feishu with retry mechanism
     
@@ -746,6 +752,7 @@ def send_to_feishu(news_list: List[Dict], title: str = "📰 Crypto Flash News",
         news_list: News list
         title: Card title
         max_retries: Maximum retry attempts (default: 3)
+        polish_threshold: Score threshold for GPT polishing display
     
     Returns:
         Whether send was successful
@@ -755,7 +762,7 @@ def send_to_feishu(news_list: List[Dict], title: str = "📰 Crypto Flash News",
         return False
     
     bot = FeishuBot()
-    card = build_feishu_card(news_list, title)
+    card = build_feishu_card(news_list, title, polish_threshold)
     
     for attempt in range(1, max_retries + 1):
         try:
@@ -931,19 +938,21 @@ Examples:
         save_news(news_list, args.output)
     
     # ========== Send to Feishu ==========
-    # Only send news that scored >= polish_threshold (75) AND was polished
+    # Send ALL news to Feishu (sorted by score, highest first)
+    # High-score news shows GPT polished version, low-score shows original with notice
     if not args.no_feishu:
-        # Only send polished news (score >= 75)
-        feishu_news = [n for n in news_list if get_total_score(n) >= args.polish_threshold]
-        
-        if feishu_news:
-            print(f"\n📤 Sending {len(feishu_news)} news to Feishu (>= {args.polish_threshold})...")
-            send_to_feishu(feishu_news, args.feishu_title)
+        if news_list:
+            polished_in_list = sum(1 for n in news_list if n.get('polished'))
+            unpolished_in_list = len(news_list) - polished_in_list
+            print(f"\n📤 Sending {len(news_list)} news to Feishu...")
+            print(f"   ✨ {polished_in_list} GPT polished (>= {args.polish_threshold})")
+            print(f"   📝 {unpolished_in_list} Grok original (< {args.polish_threshold})")
+            send_to_feishu(news_list, args.feishu_title, polish_threshold=args.polish_threshold)
         else:
-            print(f"\n⚠️ No news meets threshold ({args.polish_threshold}), skipping Feishu")
+            print("\n⚠️ No news to send to Feishu")
     
     # ========== Final Summary ==========
-    feishu_sent = len([n for n in news_list if get_total_score(n) >= args.polish_threshold]) if not args.no_feishu else 0
+    feishu_sent = len(news_list) if not args.no_feishu and news_list else 0
     print("\n" + "=" * 50)
     print("📋 Summary")
     print("=" * 50)
@@ -951,7 +960,7 @@ Examples:
     print(f"   Duplicates removed: {duplicate_count}")
     print(f"   New news: {len(news_list)}")
     print(f"   GPT polished: {polished_count}")
-    print(f"   Sent to Feishu: {feishu_sent}")
+    print(f"   Sent to Feishu: {feishu_sent} (all news, sorted by score)")
     print("=" * 50)
     
     print("\n✅ Done!")
