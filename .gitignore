@@ -27,8 +27,12 @@ build/
 output/*.json
 debug_*.json
 
-# History (keep structure, ignore content)
+# History database
 news_history.json
+news_history.db
+news_history.db-journal
+news_history.db-wal
+news_history.db-shm
 
 # Logs
 *.log

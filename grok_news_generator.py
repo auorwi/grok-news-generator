@@ -889,7 +889,7 @@ Examples:
         print(f"\n🔄 Deduplicating (similarity >= {args.dedup_threshold}, history: {args.dedup_hours}h)...")
         
         dedup = NewsDeduplicator(
-            history_file="news_history.json",
+            db_file="news_history.db",
             similarity_threshold=args.dedup_threshold,
             history_hours=args.dedup_hours
         )
